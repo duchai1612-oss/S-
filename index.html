@@ -1,47 +1,47 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Học Số Tiếng Nga - Bản Chuẩn</title>
+    <title>Russian Numbers Adventure</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap');
-        body { font-family: 'Lexend', sans-serif; background-color: #f8fafc; overflow-x: hidden; }
-        .fade-in { animation: fadeIn 0.4s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .game-btn:active { transform: scale(0.95); }
+        body { font-family: 'Lexend', sans-serif; background-color: #f8fafc; touch-action: manipulation; }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .btn-active:active { transform: scale(0.96); }
     </style>
 </head>
-<body class="min-h-screen">
+<body>
 
     <div id="app-root">
-        <!-- Màn hình chờ khởi tạo -->
-        <div class="min-h-screen flex items-center justify-center">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <!-- Màn hình khởi động nhanh -->
+        <div class="min-h-screen flex flex-col items-center justify-center p-6 bg-blue-600 text-white">
+            <div class="text-6xl mb-4 animate-bounce">🇷🇺</div>
+            <h1 class="text-2xl font-bold mb-2">Đang chuẩn bị...</h1>
+            <p class="text-blue-200 text-sm">Vui lòng đợi trong giây lát</p>
         </div>
     </div>
 
-    <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // Cấu hình Firebase lấy từ môi trường hệ thống
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'russian-numbers-v3';
+        // Cấu hình an toàn
+        let db = null;
+        let auth = null;
+        let appId = 'russian-numbers-v3';
 
-        // Biến trạng thái ứng dụng
+        // State mặc định
         let state = {
-            page: 'login', // login | dashboard | game | admin
+            page: 'login',
             user: { name: '', id: '' },
             score: 0,
             timer: 30,
-            question: null
+            question: null,
+            isOnline: false
         };
 
         const DATA = [
@@ -51,204 +51,211 @@
             { n: 20, r: "двадцать" }, { n: 30, r: "тридцать" }
         ];
 
-        let gameClock = null;
+        let gameInterval = null;
 
-        // Hàm render chính
+        // Render function
         function render() {
-            const container = document.getElementById('app-root');
-
+            const root = document.getElementById('app-root');
+            
             if (state.page === 'login') {
-                container.innerHTML = `
-                    <div class="min-h-screen flex items-center justify-center bg-blue-600 p-6">
-                        <div class="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-sm fade-in">
+                root.innerHTML = `
+                    <div class="min-h-screen flex items-center justify-center bg-blue-600 p-6 fade-in">
+                        <div class="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-sm">
                             <div class="text-6xl text-center mb-4">🇷🇺</div>
-                            <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Học Số Tiếng Nga</h2>
+                            <h2 class="text-2xl font-bold text-center text-gray-800 mb-1">Học Số Nga</h2>
+                            <p class="text-gray-400 text-center text-xs mb-8">Nhập thông tin để bắt đầu</p>
                             <div class="space-y-4">
-                                <input type="text" id="name-in" placeholder="Họ và Tên" class="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none transition-all">
-                                <input type="text" id="id-in" placeholder="Mã số sinh viên" class="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none transition-all">
-                                <button id="start-btn" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-blue-700 active:scale-95 transition-all uppercase tracking-widest">Vào học ngay</button>
+                                <input type="text" id="in-name" placeholder="Họ và Tên" class="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none transition-all">
+                                <input type="text" id="in-id" placeholder="Mã số sinh viên" class="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none transition-all">
+                                <button id="btn-start" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg btn-active uppercase">Vào học</button>
+                            </div>
+                            <div class="mt-4 text-center text-[10px] ${state.isOnline ? 'text-green-500' : 'text-gray-300'}">
+                                ${state.isOnline ? '● Đã kết nối hệ thống' : '○ Chế độ ngoại tuyến'}
                             </div>
                         </div>
                     </div>
                 `;
-                document.getElementById('start-btn').onclick = () => {
-                    const name = document.getElementById('name-in').value.trim();
-                    const id = document.getElementById('id-in').value.trim();
-                    if (!name || !id) return alert("Vui lòng nhập đủ tên và MSSV!");
-                    state.user = { name, id };
+                document.getElementById('btn-start').onclick = () => {
+                    const n = document.getElementById('in-name').value.trim();
+                    const i = document.getElementById('in-id').value.trim();
+                    if (!n || !i) return alert("Vui lòng nhập đủ thông tin!");
+                    state.user = { name: n, id: i };
                     state.page = 'dashboard';
                     render();
                 };
             }
 
             else if (state.page === 'dashboard') {
-                container.innerHTML = `
+                root.innerHTML = `
                     <div class="min-h-screen bg-gray-50 fade-in">
-                        <nav class="bg-white p-4 border-b flex justify-between items-center sticky top-0 z-10">
+                        <div class="bg-white p-4 border-b flex justify-between items-center sticky top-0">
                             <span class="font-bold text-blue-600">RUSSIAN EDU</span>
-                            <button id="admin-btn" class="text-[10px] font-bold text-gray-300 uppercase">Admin</button>
-                        </nav>
-                        <main class="max-w-md mx-auto p-6 space-y-6">
-                            <div class="bg-white p-6 rounded-3xl shadow-sm border-l-4 border-yellow-400">
-                                <h3 class="text-xl font-bold">Chào, ${state.user.name}!</h3>
-                                <p class="text-gray-400 text-sm">Hôm nay bạn muốn làm gì?</p>
+                            <button id="btn-adm" class="text-[10px] font-bold text-gray-300">ADMIN</button>
+                        </div>
+                        <div class="p-6 max-w-md mx-auto space-y-6">
+                            <div class="bg-blue-50 p-6 rounded-3xl border border-blue-100">
+                                <h3 class="text-xl font-bold text-blue-900">Chào, ${state.user.name}!</h3>
+                                <p class="text-blue-400 text-sm">Hôm nay hãy chinh phục các con số nhé.</p>
                             </div>
-                            <div class="grid gap-4">
-                                <div id="play-btn" class="bg-blue-600 text-white p-6 rounded-3xl shadow-xl flex items-center space-x-4 cursor-pointer game-btn">
-                                    <div class="text-3xl">⚡</div>
-                                    <div>
-                                        <div class="font-bold text-lg">Trò chơi Tốc độ</div>
-                                        <div class="text-blue-200 text-xs text-opacity-80">Phản xạ nhanh với số tiếng Nga</div>
-                                    </div>
-                                </div>
-                                <div class="bg-white p-6 rounded-3xl shadow-sm border-2 border-dashed border-gray-200 opacity-50 flex items-center space-x-4">
-                                    <div class="text-3xl">📚</div>
-                                    <div>
-                                        <div class="font-bold text-gray-400">Thư viện bài học</div>
-                                        <div class="text-gray-300 text-xs">Sắp ra mắt</div>
-                                    </div>
+                            <div id="go-game" class="bg-white p-6 rounded-3xl shadow-sm border-2 border-transparent hover:border-blue-600 cursor-pointer flex items-center space-x-4 btn-active transition-all">
+                                <div class="bg-yellow-100 text-2xl p-4 rounded-2xl">⚡</div>
+                                <div>
+                                    <h4 class="font-bold">Trò chơi Tốc độ</h4>
+                                    <p class="text-xs text-gray-400">Thử thách phản xạ trong 30s</p>
                                 </div>
                             </div>
-                        </main>
+                        </div>
                     </div>
                 `;
-                document.getElementById('play-btn').onclick = startNewGame;
-                document.getElementById('admin-btn').onclick = () => {
-                    if (prompt("Mã PIN Admin:") === "9999") {
-                        state.page = 'admin';
-                        render();
-                    }
+                document.getElementById('go-game').onclick = startSpeedGame;
+                document.getElementById('btn-adm').onclick = () => {
+                    if (prompt("PIN:") === "9999") { state.page = 'admin'; render(); }
                 };
             }
 
             else if (state.page === 'game') {
-                container.innerHTML = `
-                    <div class="min-h-screen bg-blue-700 text-white flex flex-col p-6 fade-in">
+                root.innerHTML = `
+                    <div class="min-h-screen bg-blue-600 text-white flex flex-col p-6 fade-in">
                         <div class="flex justify-between items-center mb-8">
                             <div class="bg-white/10 px-4 py-2 rounded-xl font-bold">ĐIỂM: ${state.score}</div>
                             <div class="bg-red-500 px-4 py-2 rounded-xl font-bold">00:${state.timer < 10 ? '0'+state.timer : state.timer}</div>
                         </div>
-                        <div class="flex-grow flex flex-col items-center justify-center text-center px-4">
-                            <p class="text-blue-300 text-xs font-bold uppercase tracking-widest mb-2">Số này là gì?</p>
-                            <h1 class="text-5xl font-black mb-12 drop-shadow-lg">${state.question.r}</h1>
-                            <div id="game-options" class="grid grid-cols-2 gap-4 w-full max-w-sm"></div>
+                        <div class="flex-grow flex flex-col items-center justify-center text-center">
+                            <p class="text-blue-200 text-xs font-bold uppercase mb-4 tracking-widest">Dịch từ này:</p>
+                            <h1 class="text-5xl font-black mb-12">${state.question.r}</h1>
+                            <div id="opts" class="grid grid-cols-2 gap-4 w-full max-w-sm"></div>
                         </div>
-                        <button id="quit-btn" class="mt-8 text-white/30 text-[10px] font-bold uppercase tracking-[0.3em]">Hủy bỏ</button>
+                        <button id="btn-quit" class="mt-8 text-white/30 text-xs font-bold uppercase">Thoát</button>
                     </div>
                 `;
-                
-                const grid = document.getElementById('game-options');
-                state.question.opts.forEach(o => {
+                const grid = document.getElementById('opts');
+                state.question.choices.forEach(c => {
                     const b = document.createElement('button');
-                    b.className = "bg-white text-blue-700 font-bold py-6 rounded-2xl text-2xl shadow-lg active:scale-95 transition-all";
-                    b.innerText = o;
-                    b.onclick = () => checkAnswer(o);
+                    b.className = "bg-white text-blue-600 font-bold py-6 rounded-2xl text-2xl shadow-xl btn-active transition-all";
+                    b.innerText = c;
+                    b.onclick = () => handleAnswer(c);
                     grid.appendChild(b);
                 });
-                document.getElementById('quit-btn').onclick = () => {
-                    clearInterval(gameClock);
+                document.getElementById('btn-quit').onclick = () => {
+                    clearInterval(gameInterval);
                     state.page = 'dashboard';
                     render();
                 };
             }
 
             else if (state.page === 'admin') {
-                container.innerHTML = `
-                    <div class="min-h-screen bg-gray-100 p-6 fade-in">
+                root.innerHTML = `
+                    <div class="min-h-screen bg-white p-6 fade-in">
                         <div class="flex justify-between items-center mb-6">
                             <h2 class="font-bold text-xl">Bảng xếp hạng</h2>
-                            <button id="back-btn" class="text-2xl">✕</button>
+                            <button id="btn-back" class="text-2xl">✕</button>
                         </div>
-                        <div id="admin-list" class="space-y-3">
-                            <div class="text-center py-10 text-gray-400">Đang tải dữ liệu...</div>
-                        </div>
+                        <div id="list" class="space-y-3">Đang tải...</div>
                     </div>
                 `;
-                document.getElementById('back-btn').onclick = () => {
-                    state.page = 'dashboard';
-                    render();
-                };
-                loadScores();
+                document.getElementById('btn-back').onclick = () => { state.page = 'dashboard'; render(); };
+                loadAdminData();
             }
         }
 
-        // Logic trò chơi
-        function startNewGame() {
+        // Logic functions
+        function startSpeedGame() {
             state.score = 0;
             state.timer = 30;
             state.page = 'game';
-            state.question = nextQ();
+            state.question = genQ();
             render();
 
-            gameClock = setInterval(() => {
+            gameInterval = setInterval(() => {
                 state.timer--;
                 if (state.timer <= 0) {
-                    clearInterval(gameClock);
-                    endGame();
+                    clearInterval(gameInterval);
+                    finishGame();
                 } else {
                     render();
                 }
             }, 1000);
         }
 
-        function nextQ() {
+        function genQ() {
             const target = DATA[Math.floor(Math.random() * DATA.length)];
-            let opts = [target.n];
-            while (opts.length < 4) {
+            let choices = [target.n];
+            while (choices.length < 4) {
                 let r = Math.floor(Math.random() * 30) + 1;
-                if (!opts.includes(r)) opts.push(r);
+                if (!choices.includes(r)) choices.push(r);
             }
-            return { ...target, opts: opts.sort(() => Math.random() - 0.5) };
+            return { ...target, choices: choices.sort(() => Math.random() - 0.5) };
         }
 
-        function checkAnswer(val) {
+        function handleAnswer(val) {
             if (val === state.question.n) {
                 state.score += 10;
             } else {
                 state.score = Math.max(0, state.score - 5);
             }
-            state.question = nextQ();
+            state.question = genQ();
             render();
         }
 
-        async function endGame() {
-            alert(`Chúc mừng ${state.user.name}!\nBạn đạt được ${state.score} điểm.`);
-            try {
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'scores'), {
-                    studentName: state.user.name,
-                    studentId: state.user.id,
-                    score: state.score,
-                    timestamp: serverTimestamp()
-                });
-            } catch (e) { console.error(e); }
+        async function finishGame() {
+            alert(`Kết thúc! Bạn được ${state.score} điểm.`);
+            if (db && state.isOnline) {
+                try {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'scores'), {
+                        studentName: state.user.name,
+                        studentId: state.user.id,
+                        score: state.score,
+                        timestamp: serverTimestamp()
+                    });
+                } catch (e) { console.error("Lưu điểm thất bại", e); }
+            }
             state.page = 'dashboard';
             render();
         }
 
-        async function loadScores() {
-            const list = document.getElementById('admin-list');
-            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'scores'), orderBy('timestamp', 'desc'));
-            const snap = await getDocs(q);
-            list.innerHTML = '';
-            snap.forEach(doc => {
-                const d = doc.data();
-                list.innerHTML += `
-                    <div class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm">
-                        <div>
-                            <div class="font-bold">${d.studentName}</div>
-                            <div class="text-[10px] text-gray-400 uppercase">${d.studentId}</div>
+        async function loadAdminData() {
+            const list = document.getElementById('list');
+            if (!db) return list.innerHTML = "Lỗi kết nối Server.";
+            try {
+                const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'scores'), orderBy('timestamp', 'desc'));
+                const snap = await getDocs(q);
+                list.innerHTML = '';
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    list.innerHTML += `
+                        <div class="p-4 bg-gray-50 rounded-2xl flex justify-between border border-gray-100">
+                            <div><div class="font-bold">${d.studentName}</div><div class="text-[10px] text-gray-400">${d.studentId}</div></div>
+                            <div class="text-xl font-black text-blue-600">${d.score}</div>
                         </div>
-                        <div class="text-xl font-black text-blue-600">${d.score}</div>
-                    </div>
-                `;
-            });
+                    `;
+                });
+            } catch (e) { list.innerHTML = "Không thể tải dữ liệu."; }
         }
 
-        // Khởi tạo Auth rồi bắt đầu App
-        signInAnonymously(auth).then(() => {
-            render();
-        });
+        // --- KHỞI TẠO HỆ THỐNG ---
+        async function init() {
+            try {
+                // Thử kết nối Firebase ngầm
+                const config = JSON.parse(__firebase_config);
+                const app = initializeApp(config);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                appId = typeof __app_id !== 'undefined' ? __app_id : 'russian-numbers-v3';
+                
+                await signInAnonymously(auth);
+                state.isOnline = true;
+                console.log("Firebase connected");
+            } catch (e) {
+                console.warn("Firebase failed, running offline mode", e);
+                state.isOnline = false;
+            } finally {
+                // Luôn hiển thị màn hình sau tối đa 1s dù Firebase có xong hay không
+                state.page = 'login';
+                render();
+            }
+        }
 
+        init();
     </script>
 </body>
 </html>
