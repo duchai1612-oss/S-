@@ -3,70 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Học Số Tiếng Nga - Bản Sửa Lỗi</title>
+    <title>Russian Numbers Adventure - Bản dành cho Giáo viên</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap');
-        body { font-family: 'Lexend', sans-serif; background-color: #f8fafc; overflow-x: hidden; }
+        body { font-family: 'Lexend', sans-serif; background-color: #f8fafc; }
         .page-node { display: none; }
         .page-node.active { display: block; }
-        .btn-game:active { transform: scale(0.95); }
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .game-card:active { transform: scale(0.98); }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="min-h-screen text-gray-800">
 
     <!-- 1. MÀN HÌNH ĐĂNG NHẬP -->
     <div id="page-login" class="page-node active min-h-screen flex items-center justify-center bg-blue-600 p-6">
-        <div class="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-sm fade-in">
+        <div class="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-sm fade-in border-b-8 border-yellow-400">
             <div class="text-6xl text-center mb-4">🇷🇺</div>
-            <h2 class="text-2xl font-bold text-center mb-6">Chào mừng bạn!</h2>
+            <h2 class="text-2xl font-bold text-center mb-2">Chào mừng bạn!</h2>
+            <p class="text-gray-400 text-center text-xs mb-8">Học số tiếng Nga qua trò chơi</p>
             <div class="space-y-4">
-                <input type="text" id="input-name" placeholder="Họ và Tên" class="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none transition-all">
-                <input type="text" id="input-id" placeholder="Mã số sinh viên" class="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none transition-all">
-                <button id="btn-do-login" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-blue-700 btn-game uppercase tracking-widest">Bắt đầu ngay</button>
+                <input type="text" id="login-name" placeholder="Họ và Tên" class="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none transition-all">
+                <input type="text" id="login-id" placeholder="Mã số sinh viên" class="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none transition-all">
+                <button id="btn-enter" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-blue-700 active:scale-95 transition-all uppercase tracking-widest">Bắt đầu ngay</button>
             </div>
-            <p id="connection-status" class="text-center text-[10px] mt-4 text-gray-400 italic">Đang kết nối máy chủ...</p>
+            <p id="status-text" class="text-center text-[10px] mt-6 text-gray-300 font-bold uppercase tracking-tighter">Đang kết nối hệ thống...</p>
         </div>
     </div>
 
     <!-- 2. MÀN HÌNH CHÍNH (DASHBOARD) -->
-    <div id="page-dashboard" class="page-node min-h-screen bg-gray-50">
-        <nav class="bg-white p-4 border-b flex justify-between items-center shadow-sm sticky top-0 z-10">
+    <div id="page-dashboard" class="page-node min-h-screen">
+        <nav class="bg-white p-4 border-b flex justify-between items-center sticky top-0 z-10 shadow-sm">
             <div class="flex items-center space-x-2">
                 <span class="text-2xl">🇷🇺</span>
                 <span class="font-bold text-blue-600 uppercase text-sm">Russian Edu</span>
             </div>
-            <button id="btn-admin-access" class="text-[10px] font-bold text-gray-300 hover:text-blue-500">ADMIN</button>
+            <button id="nav-admin" class="bg-gray-100 px-3 py-1.5 rounded-xl text-[10px] font-bold text-gray-400 hover:text-blue-600 transition-colors">QUẢN LÝ</button>
         </nav>
 
         <main class="max-w-md mx-auto p-6 space-y-6 fade-in">
-            <!-- Thông báo chào mừng -->
             <div class="bg-white p-6 rounded-3xl shadow-sm border-l-8 border-yellow-400">
-                <h3 class="text-xl font-bold">Xin chào, <span id="user-display-name" class="text-blue-600">Bạn</span>!</h3>
-                <p class="text-gray-400 text-xs">Hôm nay hãy cùng học đếm số từ 1 đến 30 nhé.</p>
+                <h3 class="text-xl font-bold text-gray-800">Xin chào, <span id="user-name-tag" class="text-blue-600">...</span>!</h3>
+                <p class="text-gray-400 text-xs">MSSV: <span id="user-id-tag">...</span></p>
             </div>
 
-            <!-- Mục Học tập & Trò chơi -->
             <div class="space-y-4">
-                <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] ml-2">Danh mục hoạt động</h4>
+                <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-2">Bài tập hôm nay</h4>
                 
-                <!-- Nút vào Trò chơi -->
-                <div id="btn-go-to-game" class="bg-white p-6 rounded-3xl shadow-sm border-2 border-transparent hover:border-blue-600 cursor-pointer flex items-center space-x-4 btn-game transition-all">
+                <div id="start-game-card" class="game-card bg-white p-6 rounded-[2rem] shadow-sm border-2 border-transparent hover:border-blue-600 cursor-pointer flex items-center space-x-4 transition-all">
                     <div class="bg-blue-100 text-blue-600 text-3xl p-4 rounded-2xl">⚡</div>
                     <div>
-                        <div class="font-bold text-lg">Trò chơi Tốc độ</div>
-                        <div class="text-gray-400 text-xs">Phản xạ nhanh với các con số</div>
+                        <div class="font-bold text-lg text-gray-800">Trò chơi Tốc độ</div>
+                        <div class="text-gray-400 text-xs">Nhìn chữ đoán số trong 30 giây</div>
                     </div>
                 </div>
 
-                <!-- Nút Học tập -->
-                <div class="bg-gray-100 p-6 rounded-3xl border-2 border-dashed border-gray-200 opacity-60 flex items-center space-x-4 grayscale cursor-not-allowed">
+                <div class="bg-gray-100 p-6 rounded-[2rem] border-2 border-dashed border-gray-200 opacity-60 flex items-center space-x-4 grayscale cursor-not-allowed">
                     <div class="bg-gray-200 text-gray-400 text-3xl p-4 rounded-2xl">📚</div>
                     <div>
-                        <div class="font-bold text-gray-500">Thư viện bài học</div>
-                        <div class="text-gray-400 text-xs">Tính năng đang phát triển</div>
+                        <div class="font-bold text-gray-500">Thư viện Từ vựng</div>
+                        <div class="text-gray-400 text-xs">Sắp ra mắt bản cập nhật mới</div>
                     </div>
                 </div>
             </div>
@@ -75,207 +72,256 @@
 
     <!-- 3. MÀN HÌNH TRÒ CHƠI -->
     <div id="page-game" class="page-node min-h-screen bg-blue-700 text-white p-6 flex flex-col">
-        <div class="flex justify-between items-center mb-10">
+        <div class="flex justify-between items-center mb-8">
             <div class="bg-white/10 px-4 py-2 rounded-xl border border-white/10">
-                <span class="text-[10px] uppercase font-bold text-blue-200 block">Điểm số</span>
+                <span class="text-[10px] uppercase font-bold text-blue-200 block">Điểm</span>
                 <span id="game-score" class="text-2xl font-black">0</span>
             </div>
-            <div id="game-timer-container" class="bg-red-500 px-5 py-2 rounded-2xl font-bold flex flex-col items-center">
+            <div class="bg-red-500 px-5 py-2 rounded-2xl font-bold text-center border-b-4 border-red-700">
                 <span class="text-[8px] uppercase">Thời gian</span>
                 <span id="game-timer" class="text-xl">30</span>
             </div>
         </div>
 
         <div class="flex-grow flex flex-col items-center justify-center text-center px-4 fade-in">
-            <p class="text-blue-300 text-xs font-bold uppercase tracking-widest mb-2">Số này là bao nhiêu?</p>
-            <h1 id="question-text" class="text-5xl md:text-7xl font-black mb-12 drop-shadow-xl italic text-yellow-300">...</h1>
-            
-            <div id="answer-options" class="grid grid-cols-2 gap-4 w-full max-w-sm">
-                <!-- Đáp án sẽ tự động render ở đây -->
+            <p class="text-blue-300 text-xs font-bold uppercase tracking-[0.4em] mb-4">Dịch từ này:</p>
+            <h1 id="question-text" class="text-5xl md:text-7xl font-black mb-12 drop-shadow-2xl italic text-yellow-300">...</h1>
+            <div id="answer-grid" class="grid grid-cols-2 gap-4 w-full max-w-sm">
+                <!-- Nút đáp án render tại đây -->
             </div>
         </div>
 
-        <button id="btn-quit-game" class="mt-8 text-white/30 text-[10px] font-bold uppercase tracking-[0.3em] hover:text-white transition-colors">Dừng chơi</button>
+        <button id="btn-quit" class="mt-8 text-white/30 text-[10px] font-bold uppercase tracking-widest hover:text-white transition-colors">✕ THOÁT</button>
     </div>
 
-    <!-- 4. MÀN HÌNH ADMIN -->
-    <div id="page-admin" class="page-node min-h-screen bg-white p-6 flex flex-col">
-        <div class="flex justify-between items-center mb-8">
-            <h2 class="text-2xl font-bold text-blue-900">Bảng Xếp Hạng 📊</h2>
-            <button id="btn-close-admin" class="text-3xl text-gray-300">✕</button>
-        </div>
-        <div id="score-list" class="space-y-3 overflow-y-auto flex-grow">
-            <!-- Danh sách điểm sẽ hiện ở đây -->
-            <p class="text-center text-gray-400 py-20">Đang tải dữ liệu...</p>
+    <!-- 4. MÀN HÌNH QUẢN LÝ (ADMIN) -->
+    <div id="page-admin" class="page-node min-h-screen bg-gray-50 p-6 flex flex-col">
+        <div class="max-w-2xl mx-auto w-full flex-grow flex flex-col">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-blue-900">Bảng Điểm Lớp Học 📊</h2>
+                    <p class="text-xs text-gray-400">Cập nhật thời gian thực từ máy chủ</p>
+                </div>
+                <button id="btn-close-admin" class="text-3xl text-gray-300 hover:text-red-500 transition-colors">✕</button>
+            </div>
+
+            <div class="bg-blue-600 text-white p-4 rounded-2xl mb-4 flex justify-between items-center shadow-lg">
+                <div>
+                    <span class="text-[10px] uppercase font-bold opacity-70">Tổng số bài nộp</span>
+                    <div id="admin-count" class="text-2xl font-black">0</div>
+                </div>
+                <button id="btn-clear-scores" class="bg-red-500 hover:bg-red-600 text-white text-[10px] font-bold px-4 py-2 rounded-lg transition-colors">RESET BẢNG ĐIỂM</button>
+            </div>
+
+            <div class="bg-white rounded-[2rem] flex-grow shadow-sm overflow-hidden flex flex-col border border-gray-100">
+                <div class="p-4 bg-gray-50 border-b flex text-[10px] font-bold text-gray-400 uppercase">
+                    <div class="flex-grow">Sinh viên</div>
+                    <div class="w-16 text-center">Điểm</div>
+                    <div class="w-24 text-right">Thời gian</div>
+                </div>
+                <div id="score-list" class="flex-grow overflow-y-auto divide-y divide-gray-50 p-2">
+                    <!-- Danh sách điểm -->
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Firebase & Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // Cấu hình Firebase
+        // Cấu hình Firebase (Lấy từ môi trường)
         const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'russian-numbers-v3';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'russian-numbers-pro';
 
-        // Dữ liệu số tiếng Nga
-        const DATA = [
+        // Dữ liệu học tập
+        const NUMBERS = [
             { n: 1, r: "один" }, { n: 2, r: "два" }, { n: 3, r: "три" }, { n: 4, r: "четыре" }, { n: 5, r: "пять" },
             { n: 6, r: "шесть" }, { n: 7, r: "семь" }, { n: 8, r: "восемь" }, { n: 9, r: "девять" }, { n: 10, r: "десять" },
             { n: 11, r: "одиннадцать" }, { n: 12, r: "двенадцать" }, { n: 13, r: "тринадцать" }, { n: 14, r: "четырнадцать" }, { n: 15, r: "пятнадцать" },
             { n: 20, r: "двадцать" }, { n: 30, r: "тридцать" }
         ];
 
-        // State ứng dụng
-        let currentUser = { name: '', id: '' };
-        let currentScore = 0;
+        // Trạng thái ứng dụng
+        let user = { name: '', id: '' };
+        let score = 0;
         let timeLeft = 30;
-        let gameClock = null;
-        let currentQuestion = null;
+        let timerInterval = null;
+        let currentTarget = null;
         let isOnline = false;
 
-        // Hàm chuyển đổi màn hình
-        function navigateTo(pageId) {
+        // --- ĐIỀU HƯỚNG ---
+        function showPage(id) {
             document.querySelectorAll('.page-node').forEach(p => p.classList.remove('active'));
-            document.getElementById(pageId).classList.add('active');
+            document.getElementById(id).classList.add('active');
         }
 
-        // Logic Đăng nhập
-        document.getElementById('btn-do-login').onclick = () => {
-            const name = document.getElementById('input-name').value.trim();
-            const id = document.getElementById('input-id').value.trim();
-            if (!name || !id) return alert("Vui lòng điền đủ thông tin!");
+        // --- ĐĂNG NHẬP ---
+        document.getElementById('btn-enter').onclick = () => {
+            const name = document.getElementById('login-name').value.trim();
+            const sid = document.getElementById('login-id').value.trim();
+            if (!name || !sid) return alert("Bạn hãy nhập đầy đủ thông tin nhé!");
             
-            currentUser = { name, id };
-            document.getElementById('user-display-name').innerText = name;
-            navigateTo('page-dashboard');
+            user = { name, id: sid };
+            document.getElementById('user-name-tag').innerText = name;
+            document.getElementById('user-id-tag').innerText = sid;
+            showPage('page-dashboard');
         };
 
-        // Logic Trò chơi
-        document.getElementById('btn-go-to-game').onclick = startNewGame;
-        document.getElementById('btn-quit-game').onclick = () => {
-            clearInterval(gameClock);
-            navigateTo('page-dashboard');
+        // --- TRÒ CHƠI ---
+        document.getElementById('start-game-card').onclick = startNewGame;
+        document.getElementById('btn-quit').onclick = () => {
+            clearInterval(timerInterval);
+            showPage('page-dashboard');
         };
 
         function startNewGame() {
-            currentScore = 0;
+            score = 0;
             timeLeft = 30;
             document.getElementById('game-score').innerText = "0";
             document.getElementById('game-timer').innerText = "30";
-            navigateTo('page-game');
-            generateQuestion();
+            showPage('page-game');
+            nextQuestion();
 
-            gameClock = setInterval(() => {
+            timerInterval = setInterval(() => {
                 timeLeft--;
                 document.getElementById('game-timer').innerText = timeLeft;
                 if (timeLeft <= 0) {
-                    clearInterval(gameClock);
-                    endGame();
+                    clearInterval(timerInterval);
+                    finishGame();
                 }
             }, 1000);
         }
 
-        function generateQuestion() {
-            const target = DATA[Math.floor(Math.random() * DATA.length)];
-            currentQuestion = target;
-            document.getElementById('question-text').innerText = target.r;
+        function nextQuestion() {
+            currentTarget = NUMBERS[Math.floor(Math.random() * NUMBERS.length)];
+            document.getElementById('question-text').innerText = currentTarget.r;
 
-            let options = [target.n];
+            let options = [currentTarget.n];
             while (options.length < 4) {
                 let r = Math.floor(Math.random() * 35) + 1;
                 if (!options.includes(r)) options.push(r);
             }
             options.sort(() => Math.random() - 0.5);
 
-            const grid = document.getElementById('answer-options');
+            const grid = document.getElementById('answer-grid');
             grid.innerHTML = '';
             options.forEach(opt => {
                 const btn = document.createElement('button');
                 btn.className = "bg-white text-blue-700 font-bold py-6 rounded-2xl text-2xl shadow-xl active:scale-95 transition-all";
                 btn.innerText = opt;
-                btn.onclick = () => checkAnswer(opt);
+                btn.onclick = () => {
+                    if (opt === currentTarget.n) {
+                        score += 10;
+                        document.getElementById('game-score').innerText = score;
+                        nextQuestion();
+                    } else {
+                        score = Math.max(0, score - 5);
+                        document.getElementById('game-score').innerText = score;
+                        btn.classList.add('bg-red-100');
+                        setTimeout(() => nextQuestion(), 200);
+                    }
+                };
                 grid.appendChild(btn);
             });
         }
 
-        function checkAnswer(val) {
-            if (val === currentQuestion.n) {
-                currentScore += 10;
-            } else {
-                currentScore = Math.max(0, currentScore - 5);
-            }
-            document.getElementById('game-score').innerText = currentScore;
-            generateQuestion();
-        }
-
-        async function endGame() {
-            alert(`Kết thúc! ${currentUser.name} đạt được ${currentScore} điểm.`);
+        async function finishGame() {
+            alert(`Xong rồi! ${user.name} đạt được ${score} điểm.`);
             if (isOnline) {
                 try {
                     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'scores'), {
-                        studentName: currentUser.name,
-                        studentId: currentUser.id,
-                        score: currentScore,
+                        studentName: user.name,
+                        studentId: user.id,
+                        score: score,
                         timestamp: serverTimestamp()
                     });
                 } catch (e) { console.error("Lưu điểm lỗi:", e); }
             }
-            navigateTo('page-dashboard');
+            showPage('page-dashboard');
         }
 
-        // Logic Admin
-        document.getElementById('btn-admin-access').onclick = () => {
+        // --- QUẢN LÝ (ADMIN) ---
+        document.getElementById('nav-admin').onclick = () => {
             if (prompt("Mã PIN Admin:") === "9999") {
-                navigateTo('page-admin');
-                loadScores();
+                showPage('page-admin');
+                refreshAdminData();
+            } else {
+                alert("Mã PIN không đúng!");
             }
         };
-        document.getElementById('btn-close-admin').onclick = () => navigateTo('page-dashboard');
 
-        async function loadScores() {
+        document.getElementById('btn-close-admin').onclick = () => showPage('page-dashboard');
+
+        async function refreshAdminData() {
             const list = document.getElementById('score-list');
-            list.innerHTML = '<p class="text-center text-gray-400 py-20">Đang tải bảng xếp hạng...</p>';
+            list.innerHTML = '<div class="text-center py-10 text-gray-400 italic">Đang tải dữ liệu...</div>';
+            
             try {
                 const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'scores'), orderBy('timestamp', 'desc'));
                 const snap = await getDocs(q);
                 list.innerHTML = '';
+                document.getElementById('admin-count').innerText = snap.size;
+
                 if (snap.empty) {
-                    list.innerHTML = '<p class="text-center text-gray-300 py-10 italic">Chưa có ai tham gia chơi.</p>';
+                    list.innerHTML = '<div class="text-center py-10 text-gray-300 italic">Chưa có bài nộp nào.</div>';
+                    return;
                 }
-                snap.forEach(doc => {
-                    const d = doc.data();
+
+                snap.forEach(docSnap => {
+                    const d = docSnap.data();
+                    const timeStr = d.timestamp ? d.timestamp.toDate().toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'}) : '...';
                     list.innerHTML += `
-                        <div class="bg-gray-50 p-4 rounded-2xl flex justify-between items-center border border-gray-100">
-                            <div>
-                                <div class="font-bold text-blue-900">${d.studentName}</div>
-                                <div class="text-[10px] text-gray-400 uppercase tracking-wider">${d.studentId}</div>
+                        <div class="p-4 flex items-center hover:bg-gray-50">
+                            <div class="flex-grow">
+                                <div class="font-bold text-gray-800">${d.studentName}</div>
+                                <div class="text-[10px] text-gray-400 font-bold uppercase">${d.studentId}</div>
                             </div>
-                            <div class="text-2xl font-black text-blue-600">${d.score}</div>
+                            <div class="w-16 text-center font-black text-blue-600 text-lg">${d.score}</div>
+                            <div class="w-24 text-right text-[10px] text-gray-300 font-bold">${timeStr}</div>
                         </div>
                     `;
                 });
-            } catch (e) { list.innerHTML = '<p class="text-center text-red-400 py-10">Lỗi kết nối dữ liệu.</p>'; }
-        }
-
-        // Khởi động hệ thống
-        async function boot() {
-            try {
-                await signInAnonymously(auth);
-                isOnline = true;
-                document.getElementById('connection-status').innerText = "● Hệ thống sẵn sàng";
-                document.getElementById('connection-status').className = "text-center text-[10px] mt-4 text-green-500 font-bold";
             } catch (e) {
-                document.getElementById('connection-status').innerText = "○ Chế độ ngoại tuyến (Không lưu điểm)";
+                list.innerHTML = '<div class="text-center py-10 text-red-400">Không thể kết nối máy chủ.</div>';
             }
         }
 
-        window.onload = boot;
+        // Tính năng xóa bảng điểm (Dành cho giáo viên reset mỗi buổi học)
+        document.getElementById('btn-clear-scores').onclick = async () => {
+            if (!confirm("BẠN CÓ CHẮC CHẮN MUỐN XÓA TOÀN BỘ BẢNG ĐIỂM KHÔNG?")) return;
+            
+            try {
+                const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'scores'));
+                const snap = await getDocs(q);
+                const deletePromises = snap.docs.map(d => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'scores', d.id)));
+                await Promise.all(deletePromises);
+                alert("Đã làm sạch bảng điểm!");
+                refreshAdminData();
+            } catch (e) {
+                alert("Lỗi khi xóa dữ liệu.");
+            }
+        };
+
+        // --- KHỞI TẠO ---
+        async function init() {
+            try {
+                await signInAnonymously(auth);
+                isOnline = true;
+                document.getElementById('status-text').innerText = "● Hệ thống sẵn sàng";
+                document.getElementById('status-text').className = "text-center text-[10px] mt-6 text-green-500 font-bold uppercase";
+            } catch (e) {
+                document.getElementById('status-text').innerText = "○ Chế độ ngoại tuyến";
+                document.getElementById('status-text').className = "text-center text-[10px] mt-6 text-orange-400 font-bold uppercase";
+            }
+        }
+
+        init();
     </script>
 </body>
 </html>
