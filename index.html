@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Học Số Tiếng Nga - Bản Chuẩn</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap');
+        body { font-family: 'Lexend', sans-serif; background-color: #f8fafc; overflow-x: hidden; }
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .game-btn:active { transform: scale(0.95); }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <div id="app-root">
+        <!-- Màn hình chờ khởi tạo -->
+        <div class="min-h-screen flex items-center justify-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // Cấu hình Firebase lấy từ môi trường hệ thống
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'russian-numbers-v3';
+
+        // Biến trạng thái ứng dụng
+        let state = {
+            page: 'login', // login | dashboard | game | admin
+            user: { name: '', id: '' },
+            score: 0,
+            timer: 30,
+            question: null
+        };
+
+        const DATA = [
+            { n: 1, r: "один" }, { n: 2, r: "два" }, { n: 3, r: "три" }, { n: 4, r: "четыре" }, { n: 5, r: "пять" },
+            { n: 6, r: "шесть" }, { n: 7, r: "семь" }, { n: 8, r: "восемь" }, { n: 9, r: "девять" }, { n: 10, r: "десять" },
+            { n: 11, r: "одиннадцать" }, { n: 12, r: "двенадцать" }, { n: 13, r: "тринадцать" }, { n: 14, r: "четырнадцать" }, { n: 15, r: "пятнадцать" },
+            { n: 20, r: "двадцать" }, { n: 30, r: "тридцать" }
+        ];
+
+        let gameClock = null;
+
+        // Hàm render chính
+        function render() {
+            const container = document.getElementById('app-root');
+
+            if (state.page === 'login') {
+                container.innerHTML = `
+                    <div class="min-h-screen flex items-center justify-center bg-blue-600 p-6">
+                        <div class="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-sm fade-in">
+                            <div class="text-6xl text-center mb-4">🇷🇺</div>
+                            <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Học Số Tiếng Nga</h2>
+                            <div class="space-y-4">
+                                <input type="text" id="name-in" placeholder="Họ và Tên" class="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none transition-all">
+                                <input type="text" id="id-in" placeholder="Mã số sinh viên" class="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none transition-all">
+                                <button id="start-btn" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-blue-700 active:scale-95 transition-all uppercase tracking-widest">Vào học ngay</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('start-btn').onclick = () => {
+                    const name = document.getElementById('name-in').value.trim();
+                    const id = document.getElementById('id-in').value.trim();
+                    if (!name || !id) return alert("Vui lòng nhập đủ tên và MSSV!");
+                    state.user = { name, id };
+                    state.page = 'dashboard';
+                    render();
+                };
+            }
+
+            else if (state.page === 'dashboard') {
+                container.innerHTML = `
+                    <div class="min-h-screen bg-gray-50 fade-in">
+                        <nav class="bg-white p-4 border-b flex justify-between items-center sticky top-0 z-10">
+                            <span class="font-bold text-blue-600">RUSSIAN EDU</span>
+                            <button id="admin-btn" class="text-[10px] font-bold text-gray-300 uppercase">Admin</button>
+                        </nav>
+                        <main class="max-w-md mx-auto p-6 space-y-6">
+                            <div class="bg-white p-6 rounded-3xl shadow-sm border-l-4 border-yellow-400">
+                                <h3 class="text-xl font-bold">Chào, ${state.user.name}!</h3>
+                                <p class="text-gray-400 text-sm">Hôm nay bạn muốn làm gì?</p>
+                            </div>
+                            <div class="grid gap-4">
+                                <div id="play-btn" class="bg-blue-600 text-white p-6 rounded-3xl shadow-xl flex items-center space-x-4 cursor-pointer game-btn">
+                                    <div class="text-3xl">⚡</div>
+                                    <div>
+                                        <div class="font-bold text-lg">Trò chơi Tốc độ</div>
+                                        <div class="text-blue-200 text-xs text-opacity-80">Phản xạ nhanh với số tiếng Nga</div>
+                                    </div>
+                                </div>
+                                <div class="bg-white p-6 rounded-3xl shadow-sm border-2 border-dashed border-gray-200 opacity-50 flex items-center space-x-4">
+                                    <div class="text-3xl">📚</div>
+                                    <div>
+                                        <div class="font-bold text-gray-400">Thư viện bài học</div>
+                                        <div class="text-gray-300 text-xs">Sắp ra mắt</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </main>
+                    </div>
+                `;
+                document.getElementById('play-btn').onclick = startNewGame;
+                document.getElementById('admin-btn').onclick = () => {
+                    if (prompt("Mã PIN Admin:") === "9999") {
+                        state.page = 'admin';
+                        render();
+                    }
+                };
+            }
+
+            else if (state.page === 'game') {
+                container.innerHTML = `
+                    <div class="min-h-screen bg-blue-700 text-white flex flex-col p-6 fade-in">
+                        <div class="flex justify-between items-center mb-8">
+                            <div class="bg-white/10 px-4 py-2 rounded-xl font-bold">ĐIỂM: ${state.score}</div>
+                            <div class="bg-red-500 px-4 py-2 rounded-xl font-bold">00:${state.timer < 10 ? '0'+state.timer : state.timer}</div>
+                        </div>
+                        <div class="flex-grow flex flex-col items-center justify-center text-center px-4">
+                            <p class="text-blue-300 text-xs font-bold uppercase tracking-widest mb-2">Số này là gì?</p>
+                            <h1 class="text-5xl font-black mb-12 drop-shadow-lg">${state.question.r}</h1>
+                            <div id="game-options" class="grid grid-cols-2 gap-4 w-full max-w-sm"></div>
+                        </div>
+                        <button id="quit-btn" class="mt-8 text-white/30 text-[10px] font-bold uppercase tracking-[0.3em]">Hủy bỏ</button>
+                    </div>
+                `;
+                
+                const grid = document.getElementById('game-options');
+                state.question.opts.forEach(o => {
+                    const b = document.createElement('button');
+                    b.className = "bg-white text-blue-700 font-bold py-6 rounded-2xl text-2xl shadow-lg active:scale-95 transition-all";
+                    b.innerText = o;
+                    b.onclick = () => checkAnswer(o);
+                    grid.appendChild(b);
+                });
+                document.getElementById('quit-btn').onclick = () => {
+                    clearInterval(gameClock);
+                    state.page = 'dashboard';
+                    render();
+                };
+            }
+
+            else if (state.page === 'admin') {
+                container.innerHTML = `
+                    <div class="min-h-screen bg-gray-100 p-6 fade-in">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="font-bold text-xl">Bảng xếp hạng</h2>
+                            <button id="back-btn" class="text-2xl">✕</button>
+                        </div>
+                        <div id="admin-list" class="space-y-3">
+                            <div class="text-center py-10 text-gray-400">Đang tải dữ liệu...</div>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('back-btn').onclick = () => {
+                    state.page = 'dashboard';
+                    render();
+                };
+                loadScores();
+            }
+        }
+
+        // Logic trò chơi
+        function startNewGame() {
+            state.score = 0;
+            state.timer = 30;
+            state.page = 'game';
+            state.question = nextQ();
+            render();
+
+            gameClock = setInterval(() => {
+                state.timer--;
+                if (state.timer <= 0) {
+                    clearInterval(gameClock);
+                    endGame();
+                } else {
+                    render();
+                }
+            }, 1000);
+        }
+
+        function nextQ() {
+            const target = DATA[Math.floor(Math.random() * DATA.length)];
+            let opts = [target.n];
+            while (opts.length < 4) {
+                let r = Math.floor(Math.random() * 30) + 1;
+                if (!opts.includes(r)) opts.push(r);
+            }
+            return { ...target, opts: opts.sort(() => Math.random() - 0.5) };
+        }
+
+        function checkAnswer(val) {
+            if (val === state.question.n) {
+                state.score += 10;
+            } else {
+                state.score = Math.max(0, state.score - 5);
+            }
+            state.question = nextQ();
+            render();
+        }
+
+        async function endGame() {
+            alert(`Chúc mừng ${state.user.name}!\nBạn đạt được ${state.score} điểm.`);
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'scores'), {
+                    studentName: state.user.name,
+                    studentId: state.user.id,
+                    score: state.score,
+                    timestamp: serverTimestamp()
+                });
+            } catch (e) { console.error(e); }
+            state.page = 'dashboard';
+            render();
+        }
+
+        async function loadScores() {
+            const list = document.getElementById('admin-list');
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'scores'), orderBy('timestamp', 'desc'));
+            const snap = await getDocs(q);
+            list.innerHTML = '';
+            snap.forEach(doc => {
+                const d = doc.data();
+                list.innerHTML += `
+                    <div class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm">
+                        <div>
+                            <div class="font-bold">${d.studentName}</div>
+                            <div class="text-[10px] text-gray-400 uppercase">${d.studentId}</div>
+                        </div>
+                        <div class="text-xl font-black text-blue-600">${d.score}</div>
+                    </div>
+                `;
+            });
+        }
+
+        // Khởi tạo Auth rồi bắt đầu App
+        signInAnonymously(auth).then(() => {
+            render();
+        });
+
+    </script>
+</body>
+</html>
